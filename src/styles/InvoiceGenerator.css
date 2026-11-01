@@ -3096,6 +3096,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .footer-actions {
@@ -3245,6 +3246,7 @@
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
+    flex-shrink: 0;
   }
 
   .footer-left {

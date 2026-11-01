@@ -4,7 +4,12 @@ import {
   Plus, Eye, Edit3, Columns, ZoomIn, ZoomOut, Maximize2,
   UserCheck, LogOut, Building2} from 'lucide-react';
 import { invoiceStore, createBlankInvoice } from '../services/invoiceStore';
-import { defaultOfficialLogo } from '../config/businessConfig';
+import { 
+  defaultOfficialLogo,
+  saveBusinessProfile,
+  saveBankDetails,
+  savePopularServices
+} from '../config/businessConfig';
 import { exportInvoiceToPdf } from '../services/pdfGenerator';
 import { googleSheetsSync } from '../services/googleSheetsSync';
 import { InvoiceList } from './InvoiceList';
@@ -37,9 +42,32 @@ export const InvoiceGenerator = ({ currentUser, onLogout }) => {
   useEffect(() => {
     loadInvoices();
   }, []);
-  const loadInvoices = () => {
-    const list = invoiceStore.getAll();
-    setInvoices(list);
+  const loadInvoices = async () => {
+    const memoryList = invoiceStore.getAll();
+    setInvoices(memoryList);
+    if (googleSheetsSync.isConfigured()) {
+      try {
+        const res = await googleSheetsSync.fetchData('all');
+        if (res && res.success && res.data) {
+          const cloud = res.data;
+          if (Array.isArray(cloud.invoices) && cloud.invoices.length > 0) {
+            invoiceStore.setAll(cloud.invoices);
+            setInvoices(invoiceStore.getAll());
+          }
+          if (cloud.shopProfile && Object.keys(cloud.shopProfile).length > 0) {
+            saveBusinessProfile(cloud.shopProfile);
+          }
+          if (cloud.bankDetails && Object.keys(cloud.bankDetails).length > 0) {
+            saveBankDetails(cloud.bankDetails);
+          }
+          if (Array.isArray(cloud.popularServices) && cloud.popularServices.length > 0) {
+            savePopularServices(cloud.popularServices);
+          }
+        }
+      } catch (err) {
+        console.warn('Initial cloud sync notice:', err);
+      }
+    }
   };
   useEffect(() => {
     if (viewMode !== 'editor') return;
@@ -79,6 +107,7 @@ export const InvoiceGenerator = ({ currentUser, onLogout }) => {
   const handleCreateNew = () => {
     const newInv = createBlankInvoice(invoices);
     setCurrentInvoice(newInv);
+    setLayoutMode(prev => prev === 'preview' ? 'split' : prev);
     setViewMode('editor');
     setManualZoomOffset(0);
   };
@@ -90,7 +119,7 @@ export const InvoiceGenerator = ({ currentUser, onLogout }) => {
   const handleSaveInvoice = async () => {
     if (!currentInvoice) return;
     const saved = invoiceStore.save(currentInvoice);
-    loadInvoices();
+    setInvoices(invoiceStore.getAll());
     setCurrentInvoice(saved);
     showToast('Invoice saved successfully! ✓');
     if (googleSheetsSync.isConfigured()) {
@@ -100,7 +129,7 @@ export const InvoiceGenerator = ({ currentUser, onLogout }) => {
   const handleDuplicate = (id) => {
     const cloned = invoiceStore.duplicate(id);
     if (cloned) {
-      loadInvoices();
+      setInvoices(invoiceStore.getAll());
       showToast(`Cloned as ${cloned.invoiceNumber} ✓`);
       if (googleSheetsSync.isConfigured()) {
         googleSheetsSync.saveInvoice(cloned);
@@ -116,7 +145,7 @@ export const InvoiceGenerator = ({ currentUser, onLogout }) => {
       updatedAt: new Date().toISOString()
     };
     invoiceStore.save(updated);
-    loadInvoices();
+    setInvoices(invoiceStore.getAll());
     if (currentInvoice && currentInvoice.id === id) {
       setCurrentInvoice(updated);
     }

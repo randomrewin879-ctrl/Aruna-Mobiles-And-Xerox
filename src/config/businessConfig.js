@@ -46,91 +46,61 @@ export const quickServicePresets = [
   { description: "Fast Wall Charger Adapter (20W / 33W)", unitPrice: 350, per: "Nos.", taxRate: 0 },
   { description: "Wired Earphones / Audio Jack Handsfree", unitPrice: 150, per: "Nos.", taxRate: 0 }
 ];
-const SERVICES_STORAGE_KEY = 'aruna_popular_services_v1';
-const PROFILE_STORAGE_KEY = 'aruna_shop_profile_v1';
-const BANK_STORAGE_KEY = 'aruna_bank_details_v1';
+let inMemoryProfile = null;
+let inMemoryBank = null;
+let inMemoryServices = null;
 export const getBusinessProfile = () => {
-  try {
-    const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (!parsed.companySealBase64 || parsed.companySealBase64.includes('AAAC') || parsed.companySealBase64.length > 500000) {
-        parsed.companySealBase64 = defaultSeal;
-      }
-      return { ...defaultBusinessProfile, ...parsed };
+  if (inMemoryProfile) {
+    if (!inMemoryProfile.companySealBase64 || inMemoryProfile.companySealBase64.includes('AAAC') || inMemoryProfile.companySealBase64.length > 500000) {
+      inMemoryProfile.companySealBase64 = defaultSeal;
     }
-  } catch (e) {
-    console.error('Failed to load shop profile from localStorage:', e);
+    return { ...defaultBusinessProfile, ...inMemoryProfile };
   }
   return { ...defaultBusinessProfile };
 };
 export const saveBusinessProfile = (profile) => {
-  try {
-    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
-  } catch (e) {
-    console.error('Failed to save shop profile to localStorage:', e);
+  if (profile) {
+    inMemoryProfile = { ...defaultBusinessProfile, ...profile };
+    if (!inMemoryProfile.companySealBase64 || inMemoryProfile.companySealBase64.includes('AAAC') || inMemoryProfile.companySealBase64.length > 500000) {
+      inMemoryProfile.companySealBase64 = defaultSeal;
+    }
   }
-  return profile;
+  return inMemoryProfile || { ...defaultBusinessProfile };
 };
 export const resetBusinessProfile = () => {
-  try {
-    localStorage.removeItem(PROFILE_STORAGE_KEY);
-  } catch (e) { }
+  inMemoryProfile = { ...defaultBusinessProfile };
   return { ...defaultBusinessProfile };
 };
 export const getBankDetails = () => {
-  try {
-    const saved = localStorage.getItem(BANK_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...defaultBankDetails, ...parsed };
-    }
-  } catch (e) {
-    console.error('Failed to load bank details from localStorage:', e);
+  if (inMemoryBank) {
+    return { ...defaultBankDetails, ...inMemoryBank };
   }
   return { ...defaultBankDetails };
 };
 export const saveBankDetails = (bank) => {
-  try {
-    localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(bank));
-  } catch (e) {
-    console.error('Failed to save bank details to localStorage:', e);
+  if (bank) {
+    inMemoryBank = { ...defaultBankDetails, ...bank };
   }
-  return bank;
+  return inMemoryBank || { ...defaultBankDetails };
 };
 export const resetBankDetails = () => {
-  try {
-    localStorage.removeItem(BANK_STORAGE_KEY);
-  } catch (e) { }
+  inMemoryBank = { ...defaultBankDetails };
   return { ...defaultBankDetails };
 };
+
 export const getPopularServices = () => {
-  try {
-    const saved = localStorage.getItem(SERVICES_STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load popular services from localStorage:', e);
+  if (Array.isArray(inMemoryServices) && inMemoryServices.length > 0) {
+    return inMemoryServices;
   }
   return quickServicePresets;
 };
 export const savePopularServices = (services) => {
-  try {
-    localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(services));
-  } catch (e) {
-    console.error('Failed to save popular services to localStorage:', e);
+  if (Array.isArray(services)) {
+    inMemoryServices = [...services];
   }
-  return services;
+  return inMemoryServices || quickServicePresets;
 };
 export const resetPopularServices = () => {
-  try {
-    localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(quickServicePresets));
-  } catch (e) {
-    console.error('Failed to reset popular services:', e);
-  }
+  inMemoryServices = [...quickServicePresets];
   return quickServicePresets;
 };

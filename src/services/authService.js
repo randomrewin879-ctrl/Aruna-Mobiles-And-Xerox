@@ -1,6 +1,11 @@
 import { signInWithPopup, signOut } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../config/firebase';
 const AUTH_STORAGE_KEY = 'aruna_auth_session_user';
+try {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.clear();
+  }
+} catch (e) {}
 export const getAllowedEmails = () => {
   const envEmails = import.meta.env.VITE_ALLOWED_EMAILS || 'randomrewin879@gmail.com,santhoshsandy81140@gmail.com';
   return envEmails
@@ -14,7 +19,7 @@ export const authService = {
   },
   getCurrentUser() {
     try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      const stored = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(AUTH_STORAGE_KEY) : null;
       if (!stored) return null;
       const user = JSON.parse(stored);
       if (this.isEmailAllowed(user.email)) {
@@ -58,7 +63,9 @@ export const authService = {
         uid: firebaseUser.uid,
         loggedInAt: new Date().toISOString()
       };
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      }
       return { success: true, user };
     } catch (err) {
       console.error('Firebase Google Sign-In error:', err);
@@ -84,7 +91,9 @@ export const authService = {
       name: normalized.split('@')[0],
       loggedInAt: new Date().toISOString()
     };
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+    }
     return { success: true, user };
   },
   async logout() {
@@ -95,6 +104,13 @@ export const authService = {
     } catch (e) {
       console.warn('Firebase sign-out warning:', e);
     }
-    localStorage.removeItem(AUTH_STORAGE_KEY);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.clear();
+      }
+    } catch (e) {}
   }
 };

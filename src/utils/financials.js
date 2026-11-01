@@ -1,4 +1,15 @@
 export const calculateInvoiceTotals = (invoice) => {
+  if (!invoice) {
+    return {
+      subtotal: 0,
+      discountAmount: 0,
+      taxableAmount: 0,
+      cgst: 0,
+      sgst: 0,
+      totalTax: 0,
+      grandTotal: 0
+    };
+  }
   const items = invoice.items || [];
   let subtotal = 0;
   let totalTax = 0;

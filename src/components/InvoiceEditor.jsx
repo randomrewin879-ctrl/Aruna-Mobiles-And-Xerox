@@ -24,6 +24,9 @@ import {
 export const InvoiceEditor = ({ invoice, onChange, onSave, onCancel, onOpenSettings }) => {
   const [activeTab, setActiveTab] = useState('all'); 
   const [popularServices, setPopularServices] = useState(getPopularServices);
+
+  if (!invoice) return null;
+
   const totals = calculateInvoiceTotals(invoice);
   const toPhoneValidation = validateCustomerPhone(invoice.toPhone);
   const toEmailValidation = validateGmail(invoice.toEmail);

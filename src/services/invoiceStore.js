@@ -4,19 +4,21 @@ import {
   getBankDetails,
   defaultSeal
 } from '../config/businessConfig';
-const STORAGE_KEY = 'aruna_invoices_data_v3';
 export const getNextInvoiceNumber = (existingInvoices = []) => {
   const currentYear = new Date().getFullYear();
   let maxSeq = 0;
-  existingInvoices.forEach(inv => {
-    if (inv.invoiceNumber) {
-      const match = inv.invoiceNumber.match(/(?:AX-)?INV-\d{4}\/(\d+)/i) || inv.invoiceNumber.match(/(\d+)$/);
-      if (match && match[1]) {
-        const num = parseInt(match[1], 10);
-        if (num > maxSeq) maxSeq = num;
+  if (Array.isArray(existingInvoices)) {
+    existingInvoices.forEach(inv => {
+      if (inv && inv.invoiceNumber != null) {
+        const invNumStr = String(inv.invoiceNumber);
+        const match = invNumStr.match(/(?:AX-)?INV-\d{4}\/(\d+)/i) || invNumStr.match(/(\d+)$/);
+        if (match && match[1]) {
+          const num = parseInt(match[1], 10);
+          if (num > maxSeq) maxSeq = num;
+        }
       }
-    }
-  });
+    });
+  }
   const nextSeq = String(maxSeq + 1).padStart(3, '0');
   return `AX-INV-${currentYear}/${nextSeq}`;
 };
@@ -67,51 +69,34 @@ export const createBlankInvoice = (existingInvoices = []) => {
     updatedAt: new Date().toISOString()
   };
 };
+let inMemoryInvoices = [];
 export const invoiceStore = {
   getAll() {
-    try {
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (!data) {
-        return [];
-      }
-      const parsed = JSON.parse(data);
-      let changed = false;
-      const cleaned = parsed
-        .filter(inv => {
-          if (inv.id && inv.id.startsWith('inv_seed_')) {
-            changed = true;
-            return false;
-          }
-          return true;
-        })
+    return [...inMemoryInvoices];
+  },
+  setAll(invoices) {
+    if (Array.isArray(invoices)) {
+      inMemoryInvoices = invoices
+        .filter(inv => !inv.id || !inv.id.startsWith('inv_seed_'))
         .map(inv => {
           let updatedInv = { ...inv };
-          if (inv.invoiceNumber && inv.invoiceNumber.startsWith('INV-')) {
-            changed = true;
-            updatedInv.invoiceNumber = inv.invoiceNumber.replace(/^INV-/, 'AX-INV-');
+          if (inv.invoiceNumber && String(inv.invoiceNumber).startsWith('INV-')) {
+            updatedInv.invoiceNumber = String(inv.invoiceNumber).replace(/^INV-/, 'AX-INV-');
           }
           if (!updatedInv.companySealBase64 || updatedInv.companySealBase64.includes('AAAC') || updatedInv.companySealBase64.length > 500000) {
-            changed = true;
             updatedInv.companySealBase64 = defaultSeal;
           }
           return updatedInv;
         });
-      if (changed) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-      }
-      return cleaned;
-    } catch (e) {
-      console.error('Failed to load invoices from localStorage:', e);
-      return [];
     }
+    return [...inMemoryInvoices];
   },
   getById(id) {
-    const list = this.getAll();
-    return list.find(item => item.id === id) || null;
+    return inMemoryInvoices.find(item => item.id === id || item.invoiceNumber === id) || null;
   },
   save(invoice) {
-    const list = this.getAll();
-    const index = list.findIndex(item => item.id === invoice.id);
+    const list = [...inMemoryInvoices];
+    const index = list.findIndex(item => item.id === invoice.id || item.invoiceNumber === invoice.invoiceNumber);
     const updatedInvoice = {
       ...invoice,
       updatedAt: new Date().toISOString()
@@ -121,33 +106,29 @@ export const invoiceStore = {
     } else {
       list.unshift(updatedInvoice);
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    inMemoryInvoices = list;
     return updatedInvoice;
   },
   duplicate(id) {
-    const list = this.getAll();
-    const target = list.find(item => item.id === id);
+    const target = inMemoryInvoices.find(item => item.id === id || item.invoiceNumber === id);
     if (!target) return null;
     const cloned = JSON.parse(JSON.stringify(target));
     cloned.id = 'inv_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-    cloned.invoiceNumber = getNextInvoiceNumber(list);
+    cloned.invoiceNumber = getNextInvoiceNumber(inMemoryInvoices);
     cloned.date = new Date().toISOString().split('T')[0];
     cloned.dueDate = cloned.date;
     cloned.status = 'Paid';
     cloned.createdAt = new Date().toISOString();
     cloned.updatedAt = new Date().toISOString();
-    list.unshift(cloned);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    inMemoryInvoices.unshift(cloned);
     return cloned;
   },
   delete(id) {
-    let list = this.getAll();
-    list = list.filter(item => item.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-    return list;
+    inMemoryInvoices = inMemoryInvoices.filter(item => item.id !== id && item.invoiceNumber !== id);
+    return [...inMemoryInvoices];
   },
   resetDefaults() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+    inMemoryInvoices = [];
     return [];
   }
 };

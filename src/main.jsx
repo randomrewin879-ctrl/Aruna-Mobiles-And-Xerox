@@ -3,11 +3,19 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 if (typeof window !== 'undefined') {
+  try {
+    localStorage.clear();
+  } catch (e) {
+  }
+  try {
+    localStorage.clear();
+  } catch (e) {
+  }
   window.addEventListener('contextmenu', (e) => {
     if (
-      e.target.tagName === 'IMG' || 
-      e.target.closest('img') || 
-      e.target.closest('.seal-container') || 
+      e.target.tagName === 'IMG' ||
+      e.target.closest('img') ||
+      e.target.closest('.seal-container') ||
       e.target.closest('.sig-container') ||
       e.target.closest('.header-logo-wrap') ||
       e.target.closest('.shop-badge') ||
