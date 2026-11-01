@@ -22,7 +22,7 @@ import {
 } from '../utils/validators';
 
 export const InvoiceEditor = ({ invoice, onChange, onSave, onCancel, onOpenSettings }) => {
-  const [activeTab, setActiveTab] = useState('items'); 
+  const [activeTab, setActiveTab] = useState('all'); 
   const [popularServices, setPopularServices] = useState(getPopularServices);
   const totals = calculateInvoiceTotals(invoice);
   const toPhoneValidation = validateCustomerPhone(invoice.toPhone);
@@ -172,31 +172,18 @@ export const InvoiceEditor = ({ invoice, onChange, onSave, onCancel, onOpenSetti
         <div className="nav-tabs">
           <button 
             type="button"
-            className={`tab-btn ${activeTab === 'items' ? 'active' : ''}`}
-            onClick={() => setActiveTab('items')}
+            className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveTab('all')}
           >
-            <Layers size={14} /> Line Items ({invoice.items?.length || 0})
-          </button>
-          <button 
-            type="button"
-            className={`tab-btn ${activeTab === 'customer' ? 'active' : ''}`}
-            onClick={() => setActiveTab('customer')}
-          >
-            👤 Customer & Dates
-          </button>
-          <button 
-            type="button"
-            className={`tab-btn ${activeTab === 'payment' ? 'active' : ''}`}
-            onClick={() => setActiveTab('payment')}
-          >
-            💳 Payment & Stamp
+            📋 Invoice Form (3 Cards)
           </button>
           <button 
             type="button"
             className={`tab-btn ${activeTab === 'business' ? 'active' : ''}`}
             onClick={() => setActiveTab('business')}
+            title="Shop Profile & Bank Settings"
           >
-            🏢 Shop Profile & Bank
+            <Building2 size={15} /> Shop Profile & Bank
           </button>
         </div>
         <div className="top-actions">
@@ -208,12 +195,14 @@ export const InvoiceEditor = ({ invoice, onChange, onSave, onCancel, onOpenSetti
             className="btn-primary" 
             onClick={() => {
               if (!toPhoneValidation.valid) {
-                setActiveTab('customer');
+                setActiveTab('all');
+                setTimeout(() => document.getElementById('card-customer')?.scrollIntoView({ behavior: 'smooth' }), 50);
                 alert(`Customer Mobile Number Error:\n${toPhoneValidation.message}`);
                 return;
               }
               if (!toEmailValidation.valid) {
-                setActiveTab('customer');
+                setActiveTab('all');
+                setTimeout(() => document.getElementById('card-customer')?.scrollIntoView({ behavior: 'smooth' }), 50);
                 alert(`Customer Gmail Address Error:\n${toEmailValidation.message}`);
                 return;
               }
@@ -235,295 +224,339 @@ export const InvoiceEditor = ({ invoice, onChange, onSave, onCancel, onOpenSetti
           </button>
         </div>
       </div>
+      {activeTab === 'all' && (
+        <div className="editor-card-jump-strip">
+          <span className="jump-strip-label">Jump to:</span>
+          <button 
+            type="button" 
+            className="card-jump-btn" 
+            onClick={() => document.getElementById('card-items')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            <Layers size={13} /> 1. Line Items ({invoice.items?.length || 0})
+          </button>
+          <button 
+            type="button" 
+            className="card-jump-btn" 
+            onClick={() => document.getElementById('card-customer')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            👤 2. Customer & Dates
+          </button>
+          <button 
+            type="button" 
+            className="card-jump-btn" 
+            onClick={() => document.getElementById('card-payment')?.scrollIntoView({ behavior: 'smooth' })}
+          >
+            💳 3. Payment & Stamp
+          </button>
+        </div>
+      )}
       <div className="editor-tab-body">
-        {activeTab === 'items' && (
-          <div className="tab-pane">
-            <div className="quick-presets-strip">
-              <div className="preset-header">
-                <span className="preset-label">
-                  <Sparkles size={14} color="#f59e0b" /> Quick Add Popular Shop Services:
-                </span>
-                <span className="preset-hint">Click any preset to add instantly</span>
+        {activeTab === 'all' && (
+          <div className="tab-pane-stacked">
+            {/* CARD 1: Line Items */}
+            <div id="card-items" className="form-card card-stacked-section">
+              <div className="section-header-row">
+                <h3 className="section-title-card">
+                  <span className="card-step-badge">1</span> Line Items & Services ({invoice.items?.length || 0})
+                </h3>
+                <span className="card-badge-info">Items & Pricing</span>
               </div>
-              <div className="preset-chips-scroll">
-                {popularServices.map((preset, pIdx) => (
-                  <button
-                    key={pIdx}
-                    type="button"
-                    className="preset-chip"
-                    onClick={() => handleAddPresetItem(preset)}
-                    title={`Add ${preset.description}`}
-                  >
-                    + {preset.description.split('(')[0].trim()} <strong className="preset-price">₹{preset.unitPrice || 0}</strong>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="items-editor-table-wrap">
-              <table className="items-form-table">
-                <thead>
-                  <tr>
-                    <th style={{ width: '36px', textAlign: 'center' }}>#</th>
-                    <th>Description (Brackets = sub-text)</th>
-                    <th style={{ width: '65px', textAlign: 'center' }}>Qty</th>
-                    <th style={{ width: '75px', textAlign: 'center' }}>Unit</th>
-                    <th style={{ width: '85px', textAlign: 'right' }}>Rate (₹)</th>
-                    <th style={{ width: '90px', textAlign: 'right' }}>Total (₹)</th>
-                    <th style={{ width: '70px', textAlign: 'center' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(invoice.items || []).map((item, index) => {
-                    const rowTotal = ((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0)).toFixed(2);
-                    return (
-                      <tr key={item.id || index}>
-                        <td className="center-cell text-muted font-bold">{index + 1}</td>
-                        <td>
-                          <textarea
-                            className="form-control desc-textarea"
-                            rows={2}
-                            value={item.description}
-                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                            placeholder="e.g. Colour Printout A4 (Glossy)"
-                          />
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0.1"
-                            step="any"
-                            className="form-control text-center"
-                            value={item.quantity === 0 || item.quantity === '0' || item.quantity === '' ? '' : item.quantity}
-                            placeholder="1"
-                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                          />
-                        </td>
-                        <td>
-                          <select
-                            className="form-control text-center select-compact"
-                            value={item.per || 'Nos.'}
-                            onChange={(e) => handleItemChange(index, 'per', e.target.value)}
-                          >
-                            <option value="Copies">Copies</option>
-                            <option value="Nos.">Nos.</option>
-                            <option value="Set">Set</option>
-                            <option value="Pcs">Pcs</option>
-                            <option value="Pack">Pack</option>
-                            <option value="Hours">Hours</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            className="form-control text-right"
-                            value={item.unitPrice === 0 || item.unitPrice === '0' || item.unitPrice === '' ? '' : item.unitPrice}
-                            placeholder="0"
-                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                          />
-                        </td>
-                        <td className="row-total-cell text-right">
-                          ₹{rowTotal}
-                        </td>
-                        <td className="action-cell center-cell">
-                          <div className="btn-group-sm">
-                            <button
-                              type="button"
-                              className="btn-icon"
-                              disabled={index === 0}
-                              onClick={() => handleMoveItem(index, -1)}
-                              title="Move Up"
-                            >
-                              <ArrowUp size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-icon"
-                              disabled={index === (invoice.items || []).length - 1}
-                              onClick={() => handleMoveItem(index, 1)}
-                              title="Move Down"
-                            >
-                              <ArrowDown size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-icon text-danger"
-                              onClick={() => handleRemoveItem(index)}
-                              title="Delete Item"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="editor-items-bottom">
-              <button type="button" className="btn-add-line" onClick={handleAddItem}>
-                <Plus size={15} /> Add Custom Item
-              </button>
-              <div className="discount-controls-box">
-                <label className="checkbox-label bank-toggle-checkbox" title="Toggle visibility of Bank & UPI details on bill/PDF">
-                  <input
-                    type="checkbox"
-                    checked={invoice.showBankDetails !== false}
-                    onChange={(e) => handleFieldChange('showBankDetails', e.target.checked)}
-                  />
-                  <span>
-                    <strong>Bank & UPI Details</strong> (வங்கி விபரம்)
+              <div className="quick-presets-strip">
+                <div className="preset-header">
+                  <span className="preset-label">
+                    <Sparkles size={14} color="#f59e0b" /> Quick Add Popular Shop Services:
                   </span>
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={invoice.hasDiscount}
-                    onChange={(e) => handleFieldChange('hasDiscount', e.target.checked)}
-                  />
-                  <span>Special Discount (₹)</span>
-                </label>
-                {invoice.hasDiscount && (
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    className="form-control discount-input"
-                    value={invoice.discount === 0 || invoice.discount === '0' || invoice.discount === '' ? '' : invoice.discount}
-                    onChange={(e) => handleFieldChange('discount', e.target.value)}
-                    placeholder="0"
-                  />
-                )}
-                <div className="quick-total-badge">
-                  Net Total: <span className="highlight-amount">{formatCurrency(totals.grandTotal)}</span>
+                  <span className="preset-hint">Click any preset to add instantly</span>
+                </div>
+                <div className="preset-chips-scroll">
+                  {popularServices.map((preset, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      className="preset-chip"
+                      onClick={() => handleAddPresetItem(preset)}
+                      title={`Add ${preset.description}`}
+                    >
+                      + {preset.description.split('(')[0].trim()} <strong className="preset-price">₹{preset.unitPrice || 0}</strong>
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-        {activeTab === 'customer' && (
-          <div className="tab-pane">
-            <div className="form-card">
-              <h3 className="section-title">Invoice Identification</h3>
-              <div className="form-grid-3">
-                <div className="form-group">
-                  <label>Bill / Invoice Number</label>
-                  <input
-                    type="text"
-                    className="form-control font-bold"
-                    value={invoice.invoiceNumber}
-                    onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Issue Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={invoice.date}
-                    onChange={(e) => handleFieldChange('date', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Due Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={invoice.dueDate}
-                    onChange={(e) => handleFieldChange('dueDate', e.target.value)}
-                  />
-                </div>
+              <div className="items-editor-table-wrap">
+                <table className="items-form-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '36px', textAlign: 'center' }}>#</th>
+                      <th>Description (Brackets = sub-text)</th>
+                      <th style={{ width: '65px', textAlign: 'center' }}>Qty</th>
+                      <th style={{ width: '75px', textAlign: 'center' }}>Unit</th>
+                      <th style={{ width: '85px', textAlign: 'right' }}>Rate (₹)</th>
+                      <th style={{ width: '90px', textAlign: 'right' }}>Total (₹)</th>
+                      <th style={{ width: '70px', textAlign: 'center' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(invoice.items || []).map((item, index) => {
+                      const rowTotal = ((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0)).toFixed(2);
+                      return (
+                        <tr key={item.id || index}>
+                          <td className="center-cell text-muted font-bold">{index + 1}</td>
+                          <td>
+                            <textarea
+                              className="form-control desc-textarea"
+                              rows={2}
+                              value={item.description}
+                              onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                              placeholder="e.g. Colour Printout A4 (Glossy)"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              min="0.1"
+                              step="any"
+                              className="form-control text-center"
+                              value={item.quantity === 0 || item.quantity === '0' || item.quantity === '' ? '' : item.quantity}
+                              placeholder="1"
+                              onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                            />
+                          </td>
+                          <td>
+                            <select
+                              className="form-control text-center select-compact"
+                              value={item.per || 'Nos.'}
+                              onChange={(e) => handleItemChange(index, 'per', e.target.value)}
+                            >
+                              <option value="Copies">Copies</option>
+                              <option value="Nos.">Nos.</option>
+                              <option value="Set">Set</option>
+                              <option value="Pcs">Pcs</option>
+                              <option value="Pack">Pack</option>
+                              <option value="Hours">Hours</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              className="form-control text-right"
+                              value={item.unitPrice === 0 || item.unitPrice === '0' || item.unitPrice === '' ? '' : item.unitPrice}
+                              placeholder="0"
+                              onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
+                            />
+                          </td>
+                          <td className="row-total-cell text-right">
+                            ₹{rowTotal}
+                          </td>
+                          <td className="action-cell center-cell">
+                            <div className="btn-group-sm">
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                disabled={index === 0}
+                                onClick={() => handleMoveItem(index, -1)}
+                                title="Move Up"
+                              >
+                                <ArrowUp size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                disabled={index === (invoice.items || []).length - 1}
+                                onClick={() => handleMoveItem(index, 1)}
+                                title="Move Down"
+                              >
+                                <ArrowDown size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon text-danger"
+                                onClick={() => handleRemoveItem(index)}
+                                title="Delete Item"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
-            </div>
-            <div className="form-card">
-              <h3 className="section-title">Customer / Client Information</h3>
-              <div className="form-grid-3">
-                <div className="form-group">
-                  <label>Title</label>
-                  <select
-                    className="form-control"
-                    value={invoice.billReceiverTitle || 'Mr.'}
-                    onChange={(e) => handleFieldChange('billReceiverTitle', e.target.value)}
-                  >
-                    <option value="Mr.">Mr.</option>
-                    <option value="Mrs.">Mrs.</option>
-                    <option value="Ms.">Ms.</option>
-                    <option value="Dr.">Dr.</option>
-                    <option value="M/s">M/s</option>
-                  </select>
-                </div>
-                <div className="form-group col-span-2">
-                  <label>Customer Full Name</label>
-                  <input
-                    type="text"
-                    className="form-control font-semibold"
-                    value={invoice.toName}
-                    onChange={(e) => handleFieldChange('toName', e.target.value)}
-                    placeholder="e.g. M. Karthik Raja"
-                  />
-                </div>
-                <div className="form-group col-span-2">
-                  <label>Customer Mobile Number(s) — Multiple numbers allowed</label>
-                  <input
-                    type="text"
-                    className={`form-control ${toPhoneValidation.message && !toPhoneValidation.valid ? 'input-error-border' : (invoice.toPhone ? 'input-success-border' : '')}`}
-                    value={invoice.toPhone || ''}
-                    onChange={(e) => handleFieldChange('toPhone', sanitizeCustomerPhoneInput(e.target.value))}
-                    placeholder="e.g. 9842156789, +91 9940947047"
-                  />
-                  <span className="field-helper-hint">
-                    10 digits or +91 followed by 10 digits. Separate multiple numbers with comma (,).
-                  </span>
-                  {invoice.toPhone && (
-                    <div className={`input-validation-msg ${toPhoneValidation.valid ? 'success' : 'error'}`}>
-                      {toPhoneValidation.valid ? (
-                        <><CheckCircle2 size={13} /> Valid Customer Mobile Number(s)</>
-                      ) : (
-                        <><AlertCircle size={13} /> {toPhoneValidation.message}</>
-                      )}
-                    </div>
+              <div className="editor-items-bottom">
+                <button type="button" className="btn-add-line" onClick={handleAddItem}>
+                  <Plus size={15} /> Add Custom Item
+                </button>
+                <div className="discount-controls-box">
+                  <label className="checkbox-label bank-toggle-checkbox" title="Toggle visibility of Bank & UPI details on bill/PDF">
+                    <input
+                      type="checkbox"
+                      checked={invoice.showBankDetails !== false}
+                      onChange={(e) => handleFieldChange('showBankDetails', e.target.checked)}
+                    />
+                    <span>
+                      <strong>Bank & UPI Details</strong> (வங்கி விபரம்)
+                    </span>
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={invoice.hasDiscount}
+                      onChange={(e) => handleFieldChange('hasDiscount', e.target.checked)}
+                    />
+                    <span>Special Discount (₹)</span>
+                  </label>
+                  {invoice.hasDiscount && (
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      className="form-control discount-input"
+                      value={invoice.discount === 0 || invoice.discount === '0' || invoice.discount === '' ? '' : invoice.discount}
+                      onChange={(e) => handleFieldChange('discount', e.target.value)}
+                      placeholder="0"
+                    />
                   )}
-                </div>
-                <div className="form-group">
-                  <label>Customer Gmail (@gmail.com)</label>
-                  <input
-                    type="email"
-                    className={`form-control ${toEmailValidation.message && !toEmailValidation.valid ? 'input-error-border' : (invoice.toEmail ? 'input-success-border' : '')}`}
-                    value={invoice.toEmail || ''}
-                    onChange={(e) => handleFieldChange('toEmail', e.target.value)}
-                    placeholder="e.g. karthik@gmail.com"
-                  />
-                  <span className="field-helper-hint">Must end with @gmail.com</span>
-                  {invoice.toEmail && (
-                    <div className={`input-validation-msg ${toEmailValidation.valid ? 'success' : 'error'}`}>
-                      {toEmailValidation.valid ? (
-                        <><CheckCircle2 size={13} /> Valid Gmail Address</>
-                      ) : (
-                        <><AlertCircle size={13} /> {toEmailValidation.message}</>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="form-group col-span-3">
-                  <label>Customer Address / City</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={invoice.toAddress}
-                    onChange={(e) => handleFieldChange('toAddress', e.target.value)}
-                    placeholder="e.g. Mattuthavani, Madurai"
-                  />
+                  <div className="quick-total-badge">
+                    Net Total: <span className="highlight-amount">{formatCurrency(totals.grandTotal)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-        {activeTab === 'payment' && (
-          <div className="tab-pane">
-            <div className="form-card">
-              <h3 className="section-title">Payment Status & Visual Rubber Stamp</h3>
+
+            {/* CARD 2: Customer & Dates */}
+            <div id="card-customer" className="form-card card-stacked-section">
+              <div className="section-header-row">
+                <h3 className="section-title-card">
+                  <span className="card-step-badge">2</span> Customer & Invoice Dates
+                </h3>
+                <span className="card-badge-info">Bill No & Client Info</span>
+              </div>
+              <div className="sub-card-box">
+                <h4 className="sub-section-title">Invoice Identification</h4>
+                <div className="form-grid-3">
+                  <div className="form-group">
+                    <label>Bill / Invoice Number</label>
+                    <input
+                      type="text"
+                      className="form-control font-bold"
+                      value={invoice.invoiceNumber}
+                      onChange={(e) => handleFieldChange('invoiceNumber', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Issue Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={invoice.date}
+                      onChange={(e) => handleFieldChange('date', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Due Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={invoice.dueDate}
+                      onChange={(e) => handleFieldChange('dueDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="sub-card-box">
+                <h4 className="sub-section-title">Customer / Client Information</h4>
+                <div className="form-grid-3">
+                  <div className="form-group">
+                    <label>Title</label>
+                    <select
+                      className="form-control"
+                      value={invoice.billReceiverTitle || 'Mr.'}
+                      onChange={(e) => handleFieldChange('billReceiverTitle', e.target.value)}
+                    >
+                      <option value="Mr.">Mr.</option>
+                      <option value="Mrs.">Mrs.</option>
+                      <option value="Ms.">Ms.</option>
+                      <option value="Dr.">Dr.</option>
+                      <option value="M/s">M/s</option>
+                    </select>
+                  </div>
+                  <div className="form-group col-span-2">
+                    <label>Customer Full Name</label>
+                    <input
+                      type="text"
+                      className="form-control font-semibold"
+                      value={invoice.toName}
+                      onChange={(e) => handleFieldChange('toName', e.target.value)}
+                      placeholder="e.g. M. Karthik Raja"
+                    />
+                  </div>
+                  <div className="form-group col-span-2">
+                    <label>Customer Mobile Number(s) — Multiple numbers allowed</label>
+                    <input
+                      type="text"
+                      className={`form-control ${toPhoneValidation.message && !toPhoneValidation.valid ? 'input-error-border' : (invoice.toPhone ? 'input-success-border' : '')}`}
+                      value={invoice.toPhone || ''}
+                      onChange={(e) => handleFieldChange('toPhone', sanitizeCustomerPhoneInput(e.target.value))}
+                      placeholder="e.g. 9842156789, +91 9940947047"
+                    />
+                    <span className="field-helper-hint">
+                      10 digits or +91 followed by 10 digits. Separate multiple numbers with comma (,).
+                    </span>
+                    {invoice.toPhone && (
+                      <div className={`input-validation-msg ${toPhoneValidation.valid ? 'success' : 'error'}`}>
+                        {toPhoneValidation.valid ? (
+                          <><CheckCircle2 size={13} /> Valid Customer Mobile Number(s)</>
+                        ) : (
+                          <><AlertCircle size={13} /> {toPhoneValidation.message}</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>Customer Gmail (@gmail.com)</label>
+                    <input
+                      type="email"
+                      className={`form-control ${toEmailValidation.message && !toEmailValidation.valid ? 'input-error-border' : (invoice.toEmail ? 'input-success-border' : '')}`}
+                      value={invoice.toEmail || ''}
+                      onChange={(e) => handleFieldChange('toEmail', e.target.value)}
+                      placeholder="e.g. karthik@gmail.com"
+                    />
+                    <span className="field-helper-hint">Must end with @gmail.com</span>
+                    {invoice.toEmail && (
+                      <div className={`input-validation-msg ${toEmailValidation.valid ? 'success' : 'error'}`}>
+                        {toEmailValidation.valid ? (
+                          <><CheckCircle2 size={13} /> Valid Gmail Address</>
+                        ) : (
+                          <><AlertCircle size={13} /> {toEmailValidation.message}</>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-group col-span-3">
+                    <label>Customer Address / City</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={invoice.toAddress}
+                      onChange={(e) => handleFieldChange('toAddress', e.target.value)}
+                      placeholder="e.g. Mattuthavani, Madurai"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: Payment & Stamp */}
+            <div id="card-payment" className="form-card card-stacked-section">
+              <div className="section-header-row">
+                <h3 className="section-title-card">
+                  <span className="card-step-badge">3</span> Payment & Visual Rubber Stamp
+                </h3>
+                <span className="card-badge-info">Settlement & Stamp</span>
+              </div>
               <div className="form-grid-2">
                 <div className="form-group">
                   <label>Payment Status</label>
@@ -569,6 +602,16 @@ export const InvoiceEditor = ({ invoice, onChange, onSave, onCancel, onOpenSetti
         )}
         {activeTab === 'business' && (
           <div className="tab-pane">
+            <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'flex-start' }}>
+              <button
+                type="button"
+                className="btn-secondary btn-sm"
+                onClick={() => setActiveTab('all')}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                ← Back to Invoice Form (3 Cards)
+              </button>
+            </div>
             {onOpenSettings && (
               <div className="global-settings-banner">
                 <div>

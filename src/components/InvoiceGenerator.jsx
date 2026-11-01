@@ -46,24 +46,30 @@ export const InvoiceGenerator = ({ currentUser, onLogout }) => {
     const computeScale = () => {
       if (!viewportRef.current) return;
       const containerWidth = viewportRef.current.clientWidth;
-      const padding = window.innerWidth < 768 ? 16 : 40;
-      const availableWidth = Math.max(220, containerWidth - padding);
+      const padding = window.innerWidth < 768 ? 16 : 32;
+      const availableWidth = Math.max(200, containerWidth - padding);
       const standardA4Width = 794;
       const fitScale = availableWidth / standardA4Width;
-      const finalScale = Math.min(1.5, Math.max(0.22, fitScale + manualZoomOffset));
+      const finalScale = Math.min(1.5, Math.max(0.18, fitScale + manualZoomOffset));
       setScale(finalScale);
       if (previewCanvasRef.current) {
         setPreviewContentHeight(previewCanvasRef.current.scrollHeight || 1123);
       }
     };
     computeScale();
-    const timer = setTimeout(computeScale, 50);
+    const t1 = setTimeout(computeScale, 50);
+    const t2 = setTimeout(computeScale, 200);
     const observer = new ResizeObserver(computeScale);
     if (viewportRef.current) observer.observe(viewportRef.current);
     if (previewCanvasRef.current) observer.observe(previewCanvasRef.current);
+    window.addEventListener('resize', computeScale);
+    window.addEventListener('orientationchange', computeScale);
     return () => {
-      clearTimeout(timer);
+      clearTimeout(t1);
+      clearTimeout(t2);
       observer.disconnect();
+      window.removeEventListener('resize', computeScale);
+      window.removeEventListener('orientationchange', computeScale);
     };
   }, [viewMode, layoutMode, manualZoomOffset, currentInvoice]);
   const showToast = (msg) => {

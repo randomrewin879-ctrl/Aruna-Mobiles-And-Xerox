@@ -206,10 +206,15 @@ export const ShopProfileBankSettingsModal = ({
           {activeTab === 'profile' && (
             <div className="settings-pane-content">
               <div className="settings-section-heading">
-                <h3>Business Header & Identity (கடை பெயர் & முகவரி)</h3>
-                <button type="button" className="btn-text-subtle" onClick={handleResetProfile}>
-                  <RotateCcw size={14} /> Reset Defaults
-                </button>
+                <div>
+                  <h3>Business Header & Identity</h3>
+                  <p className="section-hint">கடை பெயர், முகவரி, முத்திரை & லோகோ அமைப்புகள்</p>
+                </div>
+                <div className="heading-actions">
+                  <button type="button" className="btn-text-subtle" onClick={handleResetProfile}>
+                    <RotateCcw size={14} /> Reset Defaults
+                  </button>
+                </div>
               </div>
               <div className="shop-logo-settings-card">
                 <div className="logo-preview-box">
@@ -366,10 +371,15 @@ export const ShopProfileBankSettingsModal = ({
           {activeTab === 'bank' && (
             <div className="settings-pane-content">
               <div className="settings-section-heading">
-                <h3>Bank Account & UPI Payment Details (வங்கி விவரம்)</h3>
-                <button type="button" className="btn-text-subtle" onClick={handleResetBank}>
-                  <RotateCcw size={14} /> Reset Defaults
-                </button>
+                <div>
+                  <h3>Bank Account & UPI Details</h3>
+                  <p className="section-hint">வங்கி கணக்கு மற்றும் UPI QR விவரங்கள்</p>
+                </div>
+                <div className="heading-actions">
+                  <button type="button" className="btn-text-subtle" onClick={handleResetBank}>
+                    <RotateCcw size={14} /> Reset Defaults
+                  </button>
+                </div>
               </div>
               <div className="bank-toggle-banner">
                 <div className="bank-toggle-text">
